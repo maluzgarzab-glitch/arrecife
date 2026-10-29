@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <title>Arrecife</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://accounts.google.com/gsi/client" async></script>
+  </head>
+  <body>
+    <section id="pantalla-acceso" class="panel">
+      <div class="tarjeta">
+        <p class="materia">Gráficas computacionales web</p>
+        <h1>Arrecife</h1>
+        <p class="bajada">Entra con tu cuenta de Google. Al autorizar, se muestra tu nombre, correo y foto.</p>
+        <div id="boton-google"></div>
+        <p id="aviso-config" class="hidden"></p>
+        <p id="error"></p>
+      </div>
+    </section>
+
+    <div id="hud" class="hidden">
+      <p id="nombre-hud"></p>
+      <p id="ayuda">WASD nadar · mouse mirar</p>
+      <button id="btn-salir-hud" type="button">Cerrar sesión</button>
+    </div>
+    <button id="velo" class="hidden" type="button">Clic para nadar</button>
+
+    <section id="pantalla-bienvenida" class="panel hidden">
+      <div class="tarjeta perfil">
+        <p class="materia">Sesión iniciada</p>
+        <img id="foto-perfil" alt="Foto de perfil" />
+        <h2 id="nombre-perfil"></h2>
+        <p id="correo-perfil"></p>
+        <p id="estado-modelos">Cargando modelos...</p>
+        <button id="btn-bucear" type="button" disabled>Bucear</button>
+        <button id="btn-salir" type="button">Cerrar sesión</button>
+      </div>
+    </section>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./vendor/three.module.js"
+        }
+      }
+    </script>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
