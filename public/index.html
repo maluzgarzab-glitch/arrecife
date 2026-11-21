@@ -11,9 +11,9 @@
   <body>
     <section id="pantalla-acceso" class="panel">
       <div class="tarjeta">
-        <p class="materia">Gráficas computacionales web</p>
+        <p class="materia">Graficas computacionales web</p>
         <h1>Arrecife</h1>
-        <p class="bajada">Entra con tu cuenta de Google. Al autorizar, se muestra tu nombre, correo y foto.</p>
+        <p class="bajada">Entra con Google.</p>
         <div id="boton-google"></div>
         <p id="aviso-config" class="hidden"></p>
         <p id="error"></p>
@@ -22,18 +22,34 @@
 
     <div id="hud" class="hidden">
       <p id="nombre-hud"></p>
-      <p id="ayuda">WASD nadar · mouse mirar</p>
+      <p id="tiempo-hud">Tiempo: 1:00</p>
+      <p id="puntos-hud">Puntos: $0</p>
+      <p id="ultimo-hud"></p>
+      <p id="mira">+</p>
+      <p id="ayuda">WASD nadar · mouse mirar · clic arpon</p>
       <button id="btn-salir-hud" type="button">Cerrar sesión</button>
     </div>
     <button id="velo" class="hidden" type="button">Clic para nadar</button>
 
+    <section id="pantalla-fin" class="panel hidden">
+      <div class="tarjeta">
+        <p class="materia">Se acabo el tiempo</p>
+        <h1 id="puntos-fin">$0</h1>
+        <p id="detalle-fin"></p>
+        <button id="btn-otra" type="button">Otra vez</button>
+        <button id="btn-salir-fin" type="button">Cerrar sesión</button>
+      </div>
+    </section>
+
     <section id="pantalla-bienvenida" class="panel hidden">
-      <div class="tarjeta perfil">
-        <p class="materia">Sesión iniciada</p>
+      <div class="tarjeta">
+        <p class="materia">Graficas computacionales web</p>
+        <h1>Arrecife</h1>
         <img id="foto-perfil" alt="Foto de perfil" />
-        <h2 id="nombre-perfil"></h2>
+        <p id="nombre-perfil"></p>
         <p id="correo-perfil"></p>
         <p id="estado-modelos">Cargando modelos...</p>
+        <p class="bajada">60 segundos. Clic dispara el arpon: si pesca, el pez vuelve.</p>
         <button id="btn-bucear" type="button" disabled>Bucear</button>
         <button id="btn-salir" type="button">Cerrar sesión</button>
       </div>
