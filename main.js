@@ -17,6 +17,27 @@ const ROCAS = [
   { x: 6, y: 0.2, z: -4, r: 1.3 },
 ]
 const ARENA = { minX: -18.4, maxX: 18.4, minY: 0.15, maxY: 12.2, minZ: -18.4, maxZ: 18.4 }
+const DURACION = 60
+const ALCANCE_ARPON = 18
+const VELOCIDAD_ARPON = 22
+const VELOCIDAD_REGRESO = 16
+const CUPOS = { maki: 3, makiChico: 2, salmon: 4 }
+const RUTAS_TEXTURA = {
+  maki: [
+    "textures/MakiMaki.png",
+    "textures/maki.png",
+    "textures/MakiMaki.jpg",
+    "textures/MakiMaki_basecolor.png",
+    "textures/basecolor_maki.png",
+  ],
+  salmon: [
+    "textures/Salmonete.png",
+    "textures/salmonete.png",
+    "textures/Salmonete.jpg",
+    "textures/Salmonete_basecolor.png",
+    "textures/basecolor_salmonete.png",
+  ],
+}
 const RUTAS = {
   buzo: "Modelos/Modelos/Personaje/Modelo_Neopreno.fbx",
   textura: "Modelos/Modelos/Personaje/basecolor_buzo.png",
@@ -43,6 +64,15 @@ const btnSalirHud = document.querySelector("#btn-salir-hud")
 const hud = document.querySelector("#hud")
 const nombreHud = document.querySelector("#nombre-hud")
 const velo = document.querySelector("#velo")
+const puntosHud = document.querySelector("#puntos-hud")
+const tiempoHud = document.querySelector("#tiempo-hud")
+const ultimoHud = document.querySelector("#ultimo-hud")
+const mira = document.querySelector("#mira")
+const pantallaFin = document.querySelector("#pantalla-fin")
+const puntosFin = document.querySelector("#puntos-fin")
+const detalleFin = document.querySelector("#detalle-fin")
+const btnOtra = document.querySelector("#btn-otra")
+const btnSalirFin = document.querySelector("#btn-salir-fin")
 
 const escena = new THREE.Scene()
 const COLOR_AGUA = 0x0c5c72
@@ -80,6 +110,18 @@ let jugando = false
 let yaw = 0
 let pitch = 0
 let anguloMenu = 0
+let tiempoRestante = DURACION
+let puntos = 0
+let capturas = 0
+let partidaActiva = false
+let finVisible = false
+let generacion = 0
+let arpon = null
+let catalogo = null
+const direccion = new THREE.Vector3()
+const puntaAntes = new THREE.Vector3()
+const puntaAhora = new THREE.Vector3()
+const ejeArpon = new THREE.Vector3(0, 1, 0)
 
 function cargarFbx(url) {
   return new Promise((resolve, reject) => {
@@ -293,19 +335,28 @@ function posicionLibre() {
   return { x: 0, y: 5, z: 0 }
 }
 
-function crearPez(modeloBase, clipReposo, clipNado, color, largo) {
-  const modelo = clonarEsqueleto(modeloBase)
+function crearPez(tipo) {
+  const datos = catalogo[tipo]
+  const modelo = clonarEsqueleto(datos.modelo)
   quitarLucesYCamaras(modelo)
-  pintarMallas(modelo, new THREE.MeshStandardMaterial({ color, roughness: 0.42, metalness: 0.04 }))
-  ajustarTamano(modelo, largo, false)
+  pintarMallas(
+    modelo,
+    new THREE.MeshStandardMaterial({
+      color: datos.textura ? 0xffffff : datos.color,
+      map: datos.textura || null,
+      roughness: 0.55,
+      metalness: 0.04,
+    }),
+  )
+  ajustarTamano(modelo, datos.largo, false)
   modelo.rotation.y = Math.PI
   const grupo = new THREE.Group()
   grupo.add(modelo)
   const punto = posicionLibre()
   grupo.position.set(punto.x, punto.y, punto.z)
   const mezclador = new THREE.AnimationMixer(modelo)
-  const reposo = mezclador.clipAction(clipReposo)
-  const nado = mezclador.clipAction(clipNado)
+  const reposo = mezclador.clipAction(datos.reposo)
+  const nado = mezclador.clipAction(datos.nado)
   nado.play()
   escena.add(grupo)
   peces.push({
@@ -313,6 +364,11 @@ function crearPez(modeloBase, clipReposo, clipNado, color, largo) {
     mezclador,
     reposo,
     nado,
+    tipo,
+    nombre: datos.nombre,
+    valor: datos.valor,
+    radio: datos.radio,
+    atrapado: false,
     nadando: true,
     heading: Math.random() * Math.PI * 2,
     velocidad: aleatorio(1.1, 2.2),
@@ -322,18 +378,37 @@ function crearPez(modeloBase, clipReposo, clipNado, color, largo) {
   })
 }
 
+async function cargarTexturaSiExiste(rutas) {
+  const resultados = await Promise.all(
+    rutas.map(async (ruta) => {
+      try {
+        const textura = await cargadorTextura.loadAsync(ruta)
+        textura.colorSpace = THREE.SRGBColorSpace
+        textura.flipY = true
+        return textura
+      } catch {
+        return null
+      }
+    }),
+  )
+  return resultados.find(Boolean) || null
+}
+
 async function cargarModelos() {
   estadoModelos.textContent = "Cargando modelos..."
-  const [modelo, reposoFbx, nadoFbx, textura, makiReposo, makiNado, salmonReposo, salmonNado] = await Promise.all([
-    cargarFbx(RUTAS.buzo),
-    cargarFbx(RUTAS.reposo),
-    cargarFbx(RUTAS.nado),
-    cargadorTextura.loadAsync(RUTAS.textura),
-    cargarFbx(RUTAS.makiReposo),
-    cargarFbx(RUTAS.makiNado),
-    cargarFbx(RUTAS.salmonReposo),
-    cargarFbx(RUTAS.salmonNado),
-  ])
+  const [modelo, reposoFbx, nadoFbx, textura, makiReposo, makiNado, salmonReposo, salmonNado, texturaMaki, texturaSalmon] =
+    await Promise.all([
+      cargarFbx(RUTAS.buzo),
+      cargarFbx(RUTAS.reposo),
+      cargarFbx(RUTAS.nado),
+      cargadorTextura.loadAsync(RUTAS.textura),
+      cargarFbx(RUTAS.makiReposo),
+      cargarFbx(RUTAS.makiNado),
+      cargarFbx(RUTAS.salmonReposo),
+      cargarFbx(RUTAS.salmonNado),
+      cargarTexturaSiExiste(RUTAS_TEXTURA.maki),
+      cargarTexturaSiExiste(RUTAS_TEXTURA.salmon),
+    ])
 
   textura.colorSpace = THREE.SRGBColorSpace
   textura.flipY = true
@@ -359,8 +434,42 @@ async function cargarModelos() {
   const nadoMaki = clipEnSuLugar(makiNado.animations[0], "nado")
   const reposoSalmon = clipEnSuLugar(salmonReposo.animations[0], "reposo")
   const nadoSalmon = clipEnSuLugar(salmonNado.animations[0], "nado")
-  for (let i = 0; i < 5; i += 1) crearPez(makiReposo, reposoMaki, nadoMaki, 0xf0c14d, 1.7)
-  for (let i = 0; i < 5; i += 1) crearPez(salmonReposo, reposoSalmon, nadoSalmon, 0xe07a3d, 2.15)
+  catalogo = {
+    maki: {
+      modelo: makiReposo,
+      reposo: reposoMaki,
+      nado: nadoMaki,
+      color: 0xf0c14d,
+      textura: texturaMaki,
+      largo: 1.7,
+      valor: 25,
+      radio: 0.95,
+      nombre: "Maki maki",
+    },
+    makiChico: {
+      modelo: makiReposo,
+      reposo: reposoMaki,
+      nado: nadoMaki,
+      color: 0xf0c14d,
+      textura: texturaMaki,
+      largo: 1.15,
+      valor: 10,
+      radio: 0.7,
+      nombre: "Maki chico",
+    },
+    salmon: {
+      modelo: salmonReposo,
+      reposo: reposoSalmon,
+      nado: nadoSalmon,
+      color: 0xe07a3d,
+      textura: texturaSalmon,
+      largo: 2.15,
+      valor: 50,
+      radio: 1.15,
+      nombre: "Salmonete",
+    },
+  }
+  asegurarPeces()
 
   modelosListos = true
   estadoModelos.textContent = "Los modelos ya están en el arrecife."
@@ -391,9 +500,219 @@ function empujarRocas(punto, radio) {
   punto.z = limitar(punto.z, ARENA.minZ, ARENA.maxZ)
 }
 
+function asegurarPeces() {
+  for (const tipo of Object.keys(CUPOS)) {
+    const vivos = peces.filter((pez) => pez.tipo === tipo).length
+    for (let i = vivos; i < CUPOS[tipo]; i += 1) crearPez(tipo)
+  }
+}
+
+function reponerLuego(tipo) {
+  const gen = generacion
+  setTimeout(() => {
+    if (gen !== generacion || !catalogo) return
+    const vivos = peces.filter((pez) => pez.tipo === tipo).length
+    if (vivos < CUPOS[tipo]) crearPez(tipo)
+  }, 2800)
+}
+
+function pintarHud() {
+  puntosHud.textContent = `Puntos: $${puntos}`
+  const segundos = Math.ceil(tiempoRestante)
+  const minutos = Math.floor(segundos / 60)
+  const resto = String(segundos % 60).padStart(2, "0")
+  tiempoHud.textContent = `Tiempo: ${minutos}:${resto}`
+  mira.classList.toggle("hidden", !partidaActiva)
+}
+
+function crearMallaArpon() {
+  const grupo = new THREE.Group()
+  const asta = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.045, 0.04, 1.2, 6),
+    new THREE.MeshStandardMaterial({ color: 0xd8dde2, metalness: 0.35, roughness: 0.35 }),
+  )
+  asta.position.y = 0.58
+  const punta = new THREE.Mesh(
+    new THREE.ConeGeometry(0.07, 0.28, 6),
+    new THREE.MeshStandardMaterial({ color: 0xd5dbe0, metalness: 0.65, roughness: 0.3 }),
+  )
+  punta.position.y = 1.25
+  grupo.add(asta, punta)
+  return grupo
+}
+
+function crearLineaArpon() {
+  const geometria = new THREE.BufferGeometry()
+  geometria.setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3))
+  return new THREE.Line(geometria, new THREE.LineBasicMaterial({ color: 0xfff2b0 }))
+}
+
+function orientarArpon() {
+  arpon.malla.quaternion.setFromUnitVectors(ejeArpon, arpon.dir)
+  const posiciones = arpon.linea.geometry.attributes.position
+  posiciones.setXYZ(0, buzo.position.x, buzo.position.y + 0.85, buzo.position.z)
+  posiciones.setXYZ(1, arpon.malla.position.x, arpon.malla.position.y, arpon.malla.position.z)
+  posiciones.needsUpdate = true
+}
+
+function quitarArpon() {
+  if (!arpon) return
+  escena.remove(arpon.malla)
+  escena.remove(arpon.linea)
+  arpon.malla.traverse((hijo) => {
+    hijo.geometry?.dispose()
+    hijo.material?.dispose?.()
+  })
+  arpon.linea.geometry.dispose()
+  arpon.linea.material.dispose()
+  arpon = null
+}
+
+function direccionMirada() {
+  return direccion.set(
+    -Math.sin(yaw) * Math.cos(pitch),
+    Math.sin(pitch),
+    -Math.cos(yaw) * Math.cos(pitch),
+  ).normalize()
+}
+
+function disparar() {
+  if (!jugando || !partidaActiva || arpon || tiempoRestante <= 0) return
+  const origen = buzo.position.clone()
+  origen.y += 0.9
+  const dir = direccionMirada().clone()
+  origen.addScaledVector(dir, 1.15)
+  const malla = crearMallaArpon()
+  const linea = crearLineaArpon()
+  malla.position.copy(origen)
+  escena.add(malla)
+  escena.add(linea)
+  arpon = { malla, linea, dir, estado: "volando", recorrido: 0, pez: null }
+  orientarArpon()
+}
+
+function puntaDelArpon(destino) {
+  return destino.copy(arpon.malla.position).addScaledVector(arpon.dir, 1.35)
+}
+
+function golpeMundo(punto) {
+  if (punto.y < 0.35 || punto.y > 13.6) return true
+  if (punto.x < ARENA.minX + 0.2 || punto.x > ARENA.maxX - 0.2) return true
+  if (punto.z < ARENA.minZ + 0.2 || punto.z > ARENA.maxZ - 0.2) return true
+  return ROCAS.some((roca) => {
+    const dx = punto.x - roca.x
+    const dy = punto.y - roca.y
+    const dz = punto.z - roca.z
+    return Math.hypot(dx, dy, dz) < roca.r + 0.12
+  })
+}
+
+function pezEnSegmento(desde, hasta) {
+  const abx = hasta.x - desde.x
+  const aby = hasta.y - desde.y
+  const abz = hasta.z - desde.z
+  const largo2 = abx * abx + aby * aby + abz * abz || 0.0001
+  let elegido = null
+  let mejor = Infinity
+  for (const pez of peces) {
+    if (pez.atrapado) continue
+    const px = pez.grupo.position.x - desde.x
+    const py = pez.grupo.position.y - desde.y
+    const pz = pez.grupo.position.z - desde.z
+    const t = Math.max(0, Math.min(1, (px * abx + py * aby + pz * abz) / largo2))
+    const dx = desde.x + abx * t - pez.grupo.position.x
+    const dy = desde.y + aby * t - pez.grupo.position.y
+    const dz = desde.z + abz * t - pez.grupo.position.z
+    const dist = Math.hypot(dx, dy, dz)
+    if (dist < pez.radio && dist < mejor) {
+      mejor = dist
+      elegido = pez
+    }
+  }
+  return elegido
+}
+
+function cobrarPez(pez) {
+  puntos += pez.valor
+  capturas += 1
+  ultimoHud.textContent = `${pez.nombre} +$${pez.valor}`
+  escena.remove(pez.grupo)
+  const indice = peces.indexOf(pez)
+  if (indice >= 0) peces.splice(indice, 1)
+  reponerLuego(pez.tipo)
+  pintarHud()
+}
+
+function mostrarFin() {
+  if (finVisible) return
+  finVisible = true
+  jugando = false
+  teclas.clear()
+  if (document.pointerLockElement) document.exitPointerLock()
+  velo.classList.add("hidden")
+  puntosFin.textContent = `$${puntos}`
+  detalleFin.textContent = capturas === 1 ? "1 pez" : `${capturas} peces`
+  hud.classList.add("hidden")
+  pantallaFin.classList.remove("hidden")
+}
+
+function prepararFin() {
+  if (arpon) return
+  mostrarFin()
+}
+
+function actualizarArpon(dt) {
+  if (!arpon) return
+  if (arpon.estado === "volando") {
+    puntaDelArpon(puntaAntes)
+    const paso = VELOCIDAD_ARPON * dt
+    arpon.malla.position.addScaledVector(arpon.dir, paso)
+    arpon.recorrido += paso
+    puntaDelArpon(puntaAhora)
+    const pescado = pezEnSegmento(puntaAntes, puntaAhora)
+    if (pescado) {
+      arpon.estado = "trayendo"
+      arpon.pez = pescado
+      pescado.atrapado = true
+      pescado.grupo.position.copy(puntaAhora)
+      orientarArpon()
+      return
+    }
+    if (golpeMundo(puntaAhora)) {
+      quitarArpon()
+      if (!partidaActiva && tiempoRestante <= 0) mostrarFin()
+      return
+    }
+    if (arpon.recorrido >= ALCANCE_ARPON) arpon.estado = "regresando"
+    orientarArpon()
+    return
+  }
+
+  const destino = buzo.position.clone()
+  destino.y += 0.9
+  const hacia = destino.sub(arpon.malla.position)
+  const dist = hacia.length()
+  if (dist < 1.2) {
+    const pez = arpon.pez
+    quitarArpon()
+    if (pez) cobrarPez(pez)
+    if (!partidaActiva && tiempoRestante <= 0) mostrarFin()
+    return
+  }
+  arpon.dir.copy(hacia.normalize())
+  const velocidadRegreso = arpon.estado === "trayendo" ? 12 : VELOCIDAD_REGRESO
+  arpon.malla.position.addScaledVector(arpon.dir, velocidadRegreso * dt)
+  if (arpon.pez) {
+    arpon.pez.grupo.position.copy(arpon.malla.position).addScaledVector(arpon.dir, 1.05)
+    arpon.pez.grupo.lookAt(buzo.position.x, buzo.position.y + 0.9, buzo.position.z)
+  }
+  orientarArpon()
+}
+
 function actualizarPeces(dt) {
   for (const pez of peces) {
     pez.mezclador.update(dt)
+    if (pez.atrapado) return
     pez.edad += dt
     if (pez.pausa > 0) {
       pez.pausa -= dt
@@ -432,11 +751,7 @@ function actualizarPeces(dt) {
 
 function moverBuzo(dt) {
   camara.rotation.order = "YXZ"
-  mirada.set(
-    -Math.sin(yaw) * Math.cos(pitch),
-    Math.sin(pitch),
-    -Math.cos(yaw) * Math.cos(pitch),
-  ).normalize()
+  mirada.copy(direccionMirada())
   derecha.crossVectors(mirada, arriba)
   if (derecha.lengthSq() < 1e-4) derecha.set(1, 0, 0)
   derecha.normalize()
@@ -509,6 +824,7 @@ function mostrarError(texto) {
 
 function mostrarAcceso() {
   pantallaBienvenida.classList.add("hidden")
+  pantallaFin.classList.add("hidden")
   pantallaAcceso.classList.remove("hidden")
 }
 
@@ -524,6 +840,7 @@ function mostrarBienvenida(perfil) {
     fotoPerfil.classList.add("hidden")
   }
   pantallaAcceso.classList.add("hidden")
+  pantallaFin.classList.add("hidden")
   pantallaBienvenida.classList.remove("hidden")
 }
 
@@ -590,30 +907,59 @@ function prepararGoogle() {
 
 function cerrarSesion() {
   jugando = false
+  partidaActiva = false
+  finVisible = false
   teclas.clear()
+  if (arpon?.pez) arpon.pez.atrapado = false
+  quitarArpon()
   if (document.pointerLockElement) document.exitPointerLock()
   hud.classList.add("hidden")
   velo.classList.add("hidden")
+  pantallaFin.classList.add("hidden")
   sessionStorage.removeItem(CLAVE_PERFIL)
   if (window.google?.accounts?.id) window.google.accounts.id.disableAutoSelect()
   mostrarError("")
   mostrarAcceso()
 }
 
+function reiniciarPartida() {
+  generacion += 1
+  if (arpon?.pez) arpon.pez.atrapado = false
+  quitarArpon()
+  puntos = 0
+  capturas = 0
+  tiempoRestante = DURACION
+  ultimoHud.textContent = ""
+  finVisible = false
+  asegurarPeces()
+  pintarHud()
+}
+
 function empezarBuceo() {
   if (!modelosListos || !buzo) return
+  reiniciarPartida()
   jugando = true
+  partidaActiva = true
   pantallaBienvenida.classList.add("hidden")
+  pantallaFin.classList.add("hidden")
   hud.classList.remove("hidden")
   renderer.domElement.requestPointerLock()
   actualizarVelo()
+  pintarHud()
 }
 
 btnSalir.addEventListener("click", cerrarSesion)
 btnSalirHud.addEventListener("click", cerrarSesion)
+btnSalirFin.addEventListener("click", cerrarSesion)
 btnBucear.addEventListener("click", empezarBuceo)
+btnOtra.addEventListener("click", empezarBuceo)
 velo.addEventListener("click", () => {
   if (jugando) renderer.domElement.requestPointerLock()
+})
+window.addEventListener("mousedown", (evento) => {
+  if (evento.button !== 0) return
+  if (evento.target instanceof HTMLButtonElement) return
+  disparar()
 })
 document.addEventListener("pointerlockchange", actualizarVelo)
 
@@ -643,7 +989,16 @@ function animar() {
   const tiempo = reloj.elapsedTime
 
   if (jugando && buzo) {
-    moverBuzo(dt)
+    if (partidaActiva) {
+      moverBuzo(dt)
+      tiempoRestante = Math.max(0, tiempoRestante - dt)
+      if (tiempoRestante <= 0) {
+        tiempoRestante = 0
+        partidaActiva = false
+        prepararFin()
+      }
+      pintarHud()
+    }
     colocarCamara()
     mezcladorBuzo?.update(dt)
   } else {
@@ -652,6 +1007,7 @@ function animar() {
   }
 
   actualizarPeces(dt)
+  actualizarArpon(dt)
   for (const alga of algas) {
     alga.rotation.z = Math.sin(tiempo * 1.3 + alga.userData.semilla) * 0.12
   }

@@ -6,8 +6,8 @@ body {
   margin: 0;
   overflow: hidden;
   background: #0c5c72;
-  color: #16343c;
-  font-family: "Segoe UI", sans-serif;
+  color: #111;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 .hidden {
@@ -27,56 +27,45 @@ body {
   inset: 0;
   z-index: 10;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 14px;
 }
 
 .tarjeta {
-  width: min(420px, 100%);
-  padding: 28px 28px 22px;
-  background: rgba(255, 248, 236, 0.94);
-  border-radius: 18px;
-  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+  width: min(320px, 100%);
+  padding: 10px 12px 12px;
+  background: #f7f7f7;
+  border: 1px solid #444;
 }
 
 .materia {
-  margin: 0 0 6px;
-  color: #9a6b2f;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-h1,
-h2 {
-  margin: 0 0 8px;
-  color: #12343f;
-  font-family: Georgia, "Palatino Linotype", serif;
-  font-weight: 700;
+  margin: 0 0 2px;
+  color: #333;
+  font-size: 13px;
 }
 
 h1 {
-  font-size: 48px;
-  line-height: 0.95;
-}
-
-h2 {
-  margin-top: 12px;
-  font-size: 32px;
+  margin: 0 0 8px;
+  color: #003366;
+  font-size: 22px;
+  font-weight: bold;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 .bajada,
 #correo-perfil,
+#nombre-perfil,
+#estado-modelos,
 #aviso-config,
 #error {
-  color: #3e5660;
-  line-height: 1.45;
+  color: #222;
+  font-size: 14px;
+  line-height: 1.35;
 }
 
 .bajada {
-  margin: 0 0 18px;
+  margin: 0 0 12px;
 }
 
 #boton-google {
@@ -96,42 +85,45 @@ h2 {
   color: #9c3b2a;
 }
 
-.perfil {
-  text-align: center;
+#foto-perfil {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 8px 0;
+  object-fit: cover;
+  background: #ddd;
+  border: 1px solid #666;
 }
 
-#foto-perfil {
-  width: 96px;
-  height: 96px;
-  margin-top: 8px;
-  object-fit: cover;
-  background: #e7d7bc;
-  border-radius: 50%;
+#nombre-perfil {
+  margin: 0;
+  font-weight: bold;
 }
 
 #correo-perfil,
 #estado-modelos {
-  margin: 0 0 8px;
+  margin: 2px 0 8px;
 }
 
-#btn-bucear,
-#btn-salir {
-  margin: 8px 6px 0;
-}
-
-button {
-  border: 0;
-  border-radius: 999px;
-  padding: 12px 18px;
-  color: #1d1408;
-  font: inherit;
-  font-weight: 700;
-  background: #c9852c;
+.tarjeta button,
+#btn-salir-hud {
+  margin: 6px 6px 0 0;
+  border: 1px solid #555;
+  border-radius: 2px;
+  padding: 4px 10px;
+  color: #111;
+  font: 14px Arial, Helvetica, sans-serif;
+  background: #e4e4e4;
   cursor: pointer;
 }
 
-button:disabled {
-  opacity: 0.45;
+#btn-bucear {
+  background: #8fbfdc;
+}
+
+.tarjeta button:disabled,
+#btn-salir-hud:disabled {
+  color: #777;
   cursor: not-allowed;
 }
 
@@ -143,25 +135,57 @@ button:disabled {
 }
 
 #nombre-hud,
+#tiempo-hud,
+#puntos-hud,
+#ultimo-hud,
 #ayuda {
   position: absolute;
   margin: 0;
   color: white;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+#nombre-hud,
+#tiempo-hud,
+#puntos-hud,
+#ultimo-hud {
+  left: 14px;
+  font-size: 16px;
 }
 
 #nombre-hud {
-  top: 22px;
-  left: 28px;
+  top: 14px;
+  font-weight: bold;
+}
+
+#tiempo-hud {
+  top: 36px;
+}
+
+#puntos-hud {
+  top: 56px;
+}
+
+#ultimo-hud {
+  top: 76px;
+}
+
+#mira {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  color: white;
   font-size: 22px;
-  font-weight: 700;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 #ayuda {
-  bottom: 18px;
-  left: 50%;
+  bottom: 14px;
+  left: 14px;
   font-size: 14px;
-  transform: translateX(-50%);
 }
 
 #btn-salir-hud {
