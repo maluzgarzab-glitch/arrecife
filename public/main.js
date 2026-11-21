@@ -23,20 +23,8 @@ const VELOCIDAD_ARPON = 22
 const VELOCIDAD_REGRESO = 16
 const CUPOS = { maki: 3, makiChico: 2, salmon: 4 }
 const RUTAS_TEXTURA = {
-  maki: [
-    "textures/MakiMaki.png",
-    "textures/maki.png",
-    "textures/MakiMaki.jpg",
-    "textures/MakiMaki_basecolor.png",
-    "textures/basecolor_maki.png",
-  ],
-  salmon: [
-    "textures/Salmonete.png",
-    "textures/salmonete.png",
-    "textures/Salmonete.jpg",
-    "textures/Salmonete_basecolor.png",
-    "textures/basecolor_salmonete.png",
-  ],
+  maki: ["textures/makimaki_base_color.png"],
+  salmon: ["textures/salmonete_base_color.png"],
 }
 const RUTAS = {
   buzo: "Modelos/Modelos/Personaje/Modelo_Neopreno.fbx",
